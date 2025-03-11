@@ -1,0 +1,419 @@
+{% extends 'app/home.html' %}
+{% load static %}
+{% block autoseg %}
+
+<style>
+    .upload-btn-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+    }
+    .btn {
+        border: 2px solid gray;
+        color: gray;
+        background-color: white;
+        padding: 8px 20px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 8px; 
+        cursor: pointer;
+    }
+    
+    .btn:hover {
+        background-color: #f0f0f0;
+        border-color: #888; 
+        transform: scale(1.05);
+    }
+    
+    .btn:active {
+        background-color: #e0e0e0; 
+        border-color: #666;
+        transform: scale(0.95); 
+    }
+    
+    .upload-btn-wrapper input[type=file] {
+        font-size: 100px;
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+    }
+    .canvas-container {
+        width: 800px;
+        height: 600px;
+        border: 1px solid black;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+        background-color: #EEEEEE;
+    }
+    canvas {
+        max-width: 100%;
+        max-height: 100%;
+        cursor: default;
+    }
+    #results {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 20px;
+    }
+    .result-image {
+        text-align: center;
+    }
+    .result-image img {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #ccc;
+        padding: 10px;
+    }
+    button {
+        border: none;
+        color: white;
+        background-color: #007bff; 
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        border-radius: 5px; 
+        transition: background-color 0.3s, transform 0.2s; 
+        margin: 5px; 
+    }
+    
+    button:hover {
+        background-color: #0056b3; 
+        transform: scale(1.05); 
+    }
+    
+    button:active {
+        background-color: #004494; 
+        transform: scale(0.95); 
+    }
+    
+    button#segBtn {
+        background-color: #28a745;
+    }
+    
+    button#segBtn:hover {
+        background-color: #218838;
+    }
+    
+    button#okBtn {
+        background-color: #ffc107; 
+        color: black; 
+    }
+    
+    button#okBtn:hover {
+        background-color: #e0a800;
+    }
+    
+    button#clearBtn {
+        background-color: #dc3545; 
+    }
+    
+    button#clearBtn:hover {
+        background-color: #c82333;
+    }
+    .canvas-container {
+        width: 800px;
+        height: 600px;
+        border: 1px solid black;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+        background-color: #EEEEEE;
+    }
+    
+    #imageCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1; 
+    }
+    
+    #overlayCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 2; 
+        pointer-events: none; 
+    }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); 
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .spinner {
+        border: 16px solid #f3f3f3; 
+        border-top: 16px solid #3498db;
+        border-radius: 50%;
+        width: 120px;
+        height: 120px;
+        animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .processing-text {
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+        margin-top: 20px;
+        text-align: center;
+    }
+</style>
+
+<div class="container">
+    <div class="upload-btn-wrapper">
+        <button class="btn">Upload an image</button>
+        <input type="file" id="imageUpload" accept="image/*" />
+    </div>
+    <div class="canvas-container">
+        <canvas id="imageCanvas"></canvas>
+        <canvas id="overlayCanvas"></canvas>
+    </div>
+    <button id="segBtn" style="display:none;">Segment</button>
+    <button id="okBtn" style="display:none;">Remove</button>
+    <button id="clearBtn" style="display:none;">Clear</button>
+    <div id="results" style="display:none;">
+        <h3>Results</h3>
+        <div class="result-image">
+            <h4>Inpainted Image</h4>
+            <img id="inpaintedImage" src="" alt="Inpainted Image" />
+            <p id="imageSize"></p>
+            <a id="downloadBtn" href="" download="inpainted_image.png" style="display:none;">Download Inpainted Image</a>
+            <button id="continueBtn" style="display:none;">Continue</button>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="overlay">
+    <div class="spinner"></div>
+    <div class="processing-text">Processing...</div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const imageUpload = document.getElementById('imageUpload');
+        const imageCanvas = document.getElementById('imageCanvas');
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        const imageCtx = imageCanvas.getContext('2d');
+        const overlayCtx = overlayCanvas.getContext('2d');
+        const segBtn = document.getElementById('segBtn');
+        const okBtn = document.getElementById('okBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const results = document.getElementById('results');
+        const inpaintedImage = document.getElementById('inpaintedImage');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const overlay = document.getElementById('overlay');
+        let image = new Image();
+        let maskInfo = {};
+        let selectedMaskId = null;
+        let originalImageData = null;
+        const continueBtn = document.getElementById('continueBtn');
+        imageUpload.addEventListener('change', handleImageUpload);
+    
+        function handleImageUpload(e) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                image.onload = function() {
+                    const containerWidth = document.querySelector('.canvas-container').clientWidth;
+                    const containerHeight = document.querySelector('.canvas-container').clientHeight;
+                    const imageAspectRatio = image.width / image.height;
+                    const containerAspectRatio = containerWidth / containerHeight;
+                    if (imageAspectRatio > containerAspectRatio) {
+                        imageCanvas.width = containerWidth;
+                        imageCanvas.height = containerWidth / imageAspectRatio;
+                    } else {
+                        imageCanvas.height = containerHeight;
+                        imageCanvas.width = containerHeight * imageAspectRatio;
+                    }
+                    overlayCanvas.width = imageCanvas.width;
+                    overlayCanvas.height = imageCanvas.height;
+                    imageCtx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+                    imageCtx.drawImage(image, 0, 0, imageCanvas.width, imageCanvas.height);
+                    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height); // Xóa canvas phụ
+                    originalImageData = imageCtx.getImageData(0, 0, imageCanvas.width, imageCanvas.height);
+                    segBtn.style.display = 'inline-block';
+                    okBtn.style.display = 'inline-block';
+                    clearBtn.style.display = 'inline-block';
+                };
+                image.src = event.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    
+        clearBtn.addEventListener('click', function() {
+            location.reload();
+        });
+    
+        segBtn.addEventListener('click', function() {
+            showOverlay();
+            imageCanvas.toBlob(function(blob) {
+                const formData = new FormData();
+                formData.append('image', blob, 'uploaded_image.png');
+    
+                fetch('/api/segment/', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const imgData = `data:image/png;base64,${data.segmented_image}`;
+                    maskInfo = data.mask_info; // Lưu thông tin mask
+                    const segmentedImage = new Image();
+                    segmentedImage.onload = function() {
+                        imageCtx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+                        imageCtx.drawImage(segmentedImage, 0, 0, imageCanvas.width, imageCanvas.height);
+                        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                        drawMasks();
+                        hideOverlay();
+                    };
+                    segmentedImage.src = imgData;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    hideOverlay();
+                });
+            });
+        });
+    
+        function handleCanvasClick(event) {
+            const rect = imageCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+        
+            let clickedMaskId = null;
+        
+            Object.keys(maskInfo).forEach(maskId => {
+                const bbox = maskInfo[maskId].bbox;
+                if (x >= bbox[0] && x <= bbox[2] && y >= bbox[1] && y <= bbox[3]) {
+                    clickedMaskId = maskId;
+                }
+            });
+        
+            if (clickedMaskId !== null) {
+                selectedMaskId = clickedMaskId;
+                overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                drawMasks();
+                const bbox = maskInfo[selectedMaskId].bbox;
+                overlayCtx.strokeStyle = 'red';
+                overlayCtx.lineWidth = 2;
+                overlayCtx.beginPath();
+                overlayCtx.moveTo(bbox[0], bbox[1]);
+                overlayCtx.lineTo(bbox[2], bbox[3]);
+                overlayCtx.moveTo(bbox[0], bbox[3]);
+                overlayCtx.lineTo(bbox[2], bbox[1]);
+                overlayCtx.stroke();
+            }
+        }
+        imageCanvas.addEventListener('click', handleCanvasClick);
+    
+        function drawMasks() {
+            Object.keys(maskInfo).forEach(maskId => {
+                const bbox = maskInfo[maskId].bbox;
+                overlayCtx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
+                overlayCtx.lineWidth = 1;
+                overlayCtx.strokeRect(bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]);
+            });
+        }
+    
+        okBtn.addEventListener('click', function() {
+            if (selectedMaskId !== null) {
+                showOverlay();
+                imageCanvas.toBlob(function(blob) {
+                    const formData = new FormData();
+                    formData.append('image', blob, 'uploaded_image.png');
+                    formData.append('mask_info', JSON.stringify(maskInfo));
+                    formData.append('mask_id', selectedMaskId);
+    
+                    fetch('/api/segment_remove/', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const imgData = `data:image/png;base64,${data.inpainted}`;
+                        inpaintedImage.src = imgData;
+                        downloadBtn.href = imgData;
+                        downloadBtn.style.display = 'inline-block';
+                        continueBtn.style.display = 'inline-block';
+                        results.style.display = 'block';
+                        hideOverlay();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        hideOverlay();
+                    });
+                });
+            } else {
+                alert('Vui lòng chọn một mask trước khi nhấn OK.');
+            }
+        });
+
+        function showOverlay() {
+            overlay.style.display = 'flex';
+        }
+
+        function hideOverlay() {
+            overlay.style.display = 'none';
+        }
+        continueBtn.addEventListener('click', function() {
+            const inpaintedSrc = inpaintedImage.src;
+            loadNewImage(inpaintedSrc);
+        });
+        function loadNewImage(src) {
+            const image = new Image();
+            image.src = src;
+            image.onload = function() {
+                    const containerWidth = document.querySelector('.canvas-container').clientWidth;
+                    const containerHeight = document.querySelector('.canvas-container').clientHeight;
+                    const imageAspectRatio = image.width / image.height;
+                    const containerAspectRatio = containerWidth / containerHeight;
+                    if (imageAspectRatio > containerAspectRatio) {
+                        imageCanvas.width = containerWidth;
+                        imageCanvas.height = containerWidth / imageAspectRatio;
+                    } else {
+                        imageCanvas.height = containerHeight;
+                        imageCanvas.width = containerHeight * imageAspectRatio;
+                    }
+                    overlayCanvas.width = imageCanvas.width;
+                    overlayCanvas.height = imageCanvas.height;
+                    imageCtx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+                    imageCtx.drawImage(image, 0, 0, imageCanvas.width, imageCanvas.height);
+                    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height); // Xóa canvas phụ
+                    originalImageData = imageCtx.getImageData(0, 0, imageCanvas.width, imageCanvas.height);
+                    segBtn.style.display = 'inline-block';
+                    okBtn.style.display = 'inline-block';
+                    clearBtn.style.display = 'inline-block';
+                    results.style.display = 'none';
+                    downloadBtn.style.display = 'none';
+                    continueBtn.style.display = 'none';
+                    originalImageData = imageCtx.getImageData(0, 0, imageCanvas.width, imageCanvas.height);
+                    maskInfo = {};
+                    selectedMaskId = null;
+            };
+        }
+
+    });
+</script>
+
+{% endblock autoseg %}

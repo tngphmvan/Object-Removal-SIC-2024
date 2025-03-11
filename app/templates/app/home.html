@@ -1,0 +1,261 @@
+{%load static%}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="">
+        <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
+        body {
+            font-family: 'Roboto Mono', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding-top: 60px; 
+            background-color: #2c3e50;
+            color: #ecf0f1;
+        }
+        
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #E6E6FA;
+            padding: 0 40px;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            z-index: 100;
+            height: 50px;
+        }
+        .header-left{
+            display: flex;
+            flex-direction: row;
+        }
+        .header-left a {
+            color: black;
+            text-decoration: none;
+            text-align: center;
+            padding: 5px 10px;
+            align-items: center;
+            margin-left: 50px;
+        }
+        .header-left  :hover{
+            background-color: #D3D3F9;
+            border-radius: 5px;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+        
+        .header-right .header-action {
+            color: black;
+            text-decoration: none;
+            text-align: center;
+            padding: 5px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-left: 20px;
+        }
+        
+        .header-right .header-action:hover {
+            background-color: #D3D3F9;
+            border-radius: 5px;
+        }
+        
+        .search-container {
+            position: relative;
+            margin-right: 20px;
+        }
+        
+        .search-container input {
+            padding: 5px;
+            border-radius: 4px;
+            border: none;
+            outline: none;
+        }
+        
+        .search-container .search-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #2c3e50;
+            cursor: pointer;
+        }
+        
+        .search-container .clear-icon {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #2c3e50;
+            cursor: pointer;
+            display: none;
+        }
+        .main-content {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin-top: 60px; 
+        }
+        
+        
+        footer {
+            width: 100%;
+            background-color: #34495e;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 20px 0;
+            position: relative;
+            top: 100%
+        }
+        
+        .footer-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .footer-section {
+            text-align: center;
+        }
+        
+        .footer-section h4 {
+            margin-bottom: 10px;
+        }
+        
+        .footer-section p {
+            margin: 5px 0;
+        }
+        
+        .social-icon {
+            color: #ecf0f1;
+            margin: 0 10px;
+            font-size: 1.5em;
+            text-decoration: none;
+        }
+        
+        .social-icon:hover {
+            color: #1abc9c;
+        }
+        
+        footer p {
+            margin: 10px 0;
+        }
+        
+        .container {
+            display: flex;
+            justify-content: center; 
+            align-items: center; 
+            gap: 20px;
+            flex-wrap: wrap;
+            backdrop-filter: blur(6px); 
+            background-color: rgba(0, 0, 0, 0.7); 
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 70px; 
+        
+        }
+        .active-link {
+            border-bottom: 2px solid #000;
+        }
+        
+    </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="header-left">
+                <a href="{% url 'index' %}" class="{% if request.resolver_match.url_name == 'index' %}active-link{% endif %}">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="{% url 'removal' %}" class="{% if request.resolver_match.url_name == 'removal' %}active-link{% endif %}">
+                    <i class="fa-solid fa-key"></i>
+                    <span>Remove object</span>
+                </a>
+                <a href="{% url 'autoseg' %}" class="{% if request.resolver_match.url_name == 'autoseg' %}active-link{% endif %}">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Auto-segment</span>
+                </a>
+                <a href="{% url 'detail_remove' %}" class="{% if request.resolver_match.url_name == 'detail_remove' %}active-link{% endif %}">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Detail-remove</span>
+                </a>
+                <a href="{% url 'tutorial' %}" class="{% if request.resolver_match.url_name == 'tutorial' %}active-link{% endif %}">
+                    <i class="fa-solid fa-signature"></i>
+                    <span>Tutorial</span>
+                </a>
+            </div>
+            
+            <div class="header-right">
+                <div class="search-container">
+                    <input type="text" id="searchInput" placeholder="Search...">
+                    <i class="fas fa-search search-icon"></i>
+                    <i class="fas fa-times clear-icon" id="clearSearch" onclick="clearSearch()"></i>
+                </div>
+                 <a href="#login" class="header-action">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Login</span>
+                </a>
+                <a href="#register" class="header-action">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Sign in</span>
+                </a>
+            </div>
+        </div>
+
+        <div class = "main-content">
+            {%block removal%} {%endblock removal%}
+            {% block tutorial %} {% endblock tutorial %}
+            {% block autoseg %} {% endblock autoseg %}
+            {% block detail_remove %} {% endblock detail_remove %}
+        </div>
+
+        <footer>
+            <div class="footer-container">
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <p>Email: minhtuan2004s@gmail.com.com</p>
+                    <p>Phone: +123 456 7890</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Follow</h4>
+                    <a href="https://www.facebook.com/mih.tu4n/" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://twitter.com" class="social-icon"><i class="fab fa-twitter"></i></a>
+                    <a href="https://instagram.com" class="social-icon"><i class="fab fa-instagram"></i></a>
+                </div>
+                <div class="footer-section">
+                    <h4>Infor</h4>
+                    <p>Provide image processing product</p>
+                </div>
+            </div>
+            <p>&copy; 2024 Object removal. All rights reserved.</p>
+        </footer>
+
+    </body>
+    <script>
+
+    </script>
+</html>
